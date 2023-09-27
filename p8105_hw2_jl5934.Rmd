@@ -1,0 +1,144 @@
+---
+title: "p8105_hw2_jl5934"
+author: "Jesus Luevano"
+date: "2023-09-26"
+output: github_document
+---
+
+```{r library}
+library(tidyverse)
+```
+
+# Problem 1
+
+##Importing the Data, cleaning it
+
+Start with the polls data by month and year.
+
+```{r pol Month}
+Pol_Month.df = read_csv("data/fivethirtyeight_datasets/pols-month.csv") %>%
+  janitor::clean_names() %>%
+  separate(
+    mon,
+    c("year", "month", "day")
+  ) 
+
+Pol_Month.df = Pol_Month.df %>% mutate(month = case_match(
+    month,
+    "01" ~ "January",
+    "02" ~ "February",
+    "03" ~ "March",
+    "04" ~ "April",
+    "05" ~ "May",
+    "06" ~ "June",
+    "07" ~ "July",
+    "08" ~ "August",
+    "09" ~ "September",
+    "10" ~ "October",
+    "11" ~ "November",
+    "12" ~ "December"))
+
+Pol_Month.df = Pol_Month.df %>% mutate(President = case_when(
+  prez_gop == 1 ~ "gop",
+  prez_dem == 1 ~ "dem"
+))
+  
+Pol_Month.df = select(Pol_Month.df, -c("prez_gop", "prez_dem", "day"))
+
+```
+
+Next do the Snp outcome, again by month and year. Here, the years were in the format of only the last two digits (as opposed to four digits like the other datasets). I saw that 00-13 related to 2000-2013, and 50-99 for 1950-1999. So I added a new column to create a prefix that I then concatenated to make the full four digit variable, and then removed that prior working column. This was to allow for downstream merging by year and month.
+
+```{r snp}
+Snp.df = read_csv("data/fivethirtyeight_datasets/snp.csv") %>%
+  janitor::clean_names() %>%
+  separate(
+    date,
+    c("month", "day", "year")
+  )
+
+Snp.df = Snp.df %>% mutate(month = case_match(
+    month,
+    "1" ~ "January",
+    "2" ~ "February",
+    "3" ~ "March",
+    "4" ~ "April",
+    "5" ~ "May",
+    "6" ~ "June",
+    "7" ~ "July",
+    "8" ~ "August",
+    "9" ~ "September",
+    "10" ~ "October",
+    "11" ~ "November",
+    "12" ~ "December"))
+
+Snp.df = select(Snp.df, c(year, month, everything()))
+
+Snp.df <- Snp.df %>%
+  mutate(year_prefix = case_when(
+    year < 16 ~ 20,
+    year > 49 ~ 19)) %>%
+  mutate(year = paste(year_prefix,year, sep = "")) %>%
+  select(-c("year_prefix"))
+
+
+```
+
+Last the unemployment rate by month and year. Here month information was by three letter abbreviation, so converted that. Additionally, year was in format of number, other two were character format, so I converted to allow for downstream merging. 
+
+```{r unemployment}
+Unemployment.df = read_csv("data/fivethirtyeight_datasets/unemployment.csv") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to = "unemployment_rate"
+  )
+Unemployment.df[["year"]] <- as.character(Unemployment.df[["year"]])
+
+Unemployment.df = Unemployment.df %>% mutate(month = case_match(
+    month,
+    "jan" ~ "January",
+    "feb" ~ "February",
+    "mar" ~ "March",
+    "apr" ~ "April",
+    "may" ~ "May",
+    "jun" ~ "June",
+    "jul" ~ "July",
+    "aug" ~ "August",
+    "sep" ~ "September",
+    "oct" ~ "October",
+    "nov" ~ "November",
+    "dec" ~ "December"))
+```
+
+## Merging the datasets
+
+First we merge Pol data by month and snapshot based on same column of year and month. Then we take that new merged dataframe and merge it with unemployment again by year and month.
+
+```{r merge datasets}
+Pol_Snp.df <- full_join(Pol_Month.df, Snp.df, by = c("year", "month"))
+
+Pol_Snp_Unemployment.df <- full_join(Pol_Snp.df, Unemployment.df, by = c("year", "month"))
+```
+
+## Describing the dataframes
+
+Variables contained:
+
+* The Pol_Month dataframe included variables for `r names(Pol_Month.df)`. The size of the dataset is `r nrow(Pol_Month.df)` rows by `r ncol(Pol_Month.df)` columns. It was describing the breakdown of seats in the senate, governorships, and the President based on Democrat or Republican status for specific date that was made up of a day, month, and year.
+
+  * The range of years represented in this dataset are `r range(Pol_Month.df[["year"]])`.
+
+* The Snp dataframe included variables `r names(Snp.df)`. The size of the dataset is `r nrow(Snp.df)` rows by `r ncol(Snp.df)` columns. It was describing the Snp close value, based on date that included day, month, and year.
+
+  * The range of years represented in this dataset are `r range(Snp.df[["year"]])`. The range of the Snp was `r range(Snp.df[["close"]])`, and the mean was `r mean(Snp.df[["close"]])`.
+
+* The Unemployment dataframe included variables `r names(Unemployment.df)`. The size of the dataset is `r nrow(Unemployment.df)` rows by `r ncol(Unemployment.df)` columns. It was describing the unemployment rate based on date that inclued month and year.
+
+  * The range of years represented in this dataset are `r range(Unemployment.df[["year"]])`. When we attempt to caculate the range of the Unemployment rate `r range(Unemployment.df[["unemployment_rate"]])`, and the mean `r mean(Unemployment.df[["unemployment_rate"]])`, we get NA, as there are missing values that would need to be dealt with. 
+  
+
+# Problem 2
+
+
