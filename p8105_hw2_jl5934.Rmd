@@ -200,7 +200,7 @@ We then take that Mr_Prof set and combine it with Gwynnda, which of note adds a 
 ```{r}
 Mr_ProfTrashWheel.df <- full_join(MrTrashWheel.df, ProfTrashWheel.df) 
 
-All_TrashWheel.df <- full_join(Mr_ProfTrashWheel.df, Gwynnda.df)
+All_TrashWheel.df <- full_join(Mr_ProfTrashWheel.df, Gwynnda.df) #maybe month, year and date redundant?
 ```
 
 
@@ -212,7 +212,67 @@ All_TrashWheel.df <- full_join(Mr_ProfTrashWheel.df, Gwynnda.df)
 
 * The total weight of trash collected by professor Trash wheel was `r sum(ProfTrashWheel.df[["weight_tons"]])` tons. 
 
-* The total number of cigarette butts collected by Gwynnda in July 2021 was `r sum(Gwynnda.df$cigarette_butts[which(Gwynnda.df$month == "July" & Gwynnda.df$year == '2021')])`. 
+* The total number of cigarette butts collected by Gwynnda in July 2021 was `r sum(Gwynnda.df[["cigarette_butts"]][which(Gwynnda.df[["month"]] == "July" & Gwynnda.df[["year"]] == '2021')])`. 
 
 
 # Problem 3
+
+## Importing, cleaning, tidying up the dataset
+
+```{r baseline demographics}
+Baseline_demographics.df <- read_csv("data/data_mci/MCI_baseline.csv", 
+                                     skip = 1,
+                                     na = ".") %>%
+  janitor::clean_names()
+
+Baseline_demographics.df[["sex"]] <- as.factor(Baseline_demographics.df[["sex"]]) #sex =1 if male, 0 = female, consider renaming
+Baseline_demographics.df[["apoe4"]] <- as.factor(Baseline_demographics.df[["apoe4"]])
+
+Baseline_demographics_with_MCI.df <- subset(Baseline_demographics.df, !is.na(age_at_onset))
+
+```
+
+* The number of participants recruited were `r nrow(Baseline_demographics.df)` patients, but of those that had MCI it was `r nrow(Baseline_demographics_with_MCI.df)`.
+
+* Baseline mean age of all participants was `r mean(Baseline_demographics.df[["current_age"]])`, and for those with MCI it was `r mean(Baseline_demographics_with_MCI.df[["current_age"]])`. Range of the ages for all participants was `r range(Baseline_demographics.df[["current_age"]])` and range of ages for those with MCI was `r mean(Baseline_demographics_with_MCI.df[["current_age"]])`.
+
+* The proportion of women in the study who are APOE4 carriers are `r (nrow(Baseline_demographics.df %>% filter(sex == '0' & apoe4 == '1')))/(nrow(Baseline_demographics.df %>% filter(sex == '0')))` from the total population, and `r (nrow(Baseline_demographics_with_MCI.df %>% filter(sex == '0' & apoe4 == '1')))/(nrow(Baseline_demographics_with_MCI.df %>% filter(sex == '0')))` amongst those with MCI.
+
+
+We will now import, clean, and rename the variable Study_ID to id to match the prior above in preparation for merging. 
+
+```{r amyloid biomarker}
+Amyloid_Biomarker.df <- read_csv("data/data_mci/mci_amyloid.csv",
+                                 skip = 1,
+                                 na = "NA") %>%
+  janitor::clean_names() %>%
+  rename("id" = "study_id")
+```
+
+We will determine which sample IDs are found in Baseline Demographics but not in amyloid, and then coversely see which are in Amyloid Biomarkers but not in Baseline Demographics. 
+
+```{r see if shared samples}
+Baseline_demographics.df[["shared_with_biomarkers"]] <- Baseline_demographics.df[["id"]] %in% c(Amyloid_Biomarker.df[["id"]])
+
+Amyloid_Biomarker.df[["shared_with_baseline"]] <- Amyloid_Biomarker.df[["id"]] %in% c(Baseline_demographics.df[["id"]])
+```
+
+There are `r nrow(Baseline_demographics.df %>% filter(shared_with_biomarkers == "FALSE"))` IDs from the baseline demographics not found in the amyloid biomakers (id = 14, 49, 92, 179, 268, 304, 389, 412). 
+
+There are `r nrow(Amyloid_Biomarker.df %>% filter(shared_with_baseline == "FALSE"))` IDs from the amyloid biomarker dataframe not found in the baseline demographics (id = 484-495).
+
+## Combining the Datasets
+
+```{r combine if matching sample ID}
+Baseline_Amyloid.df <- inner_join(Baseline_demographics.df, Amyloid_Biomarker.df, by = "id")
+
+write_csv(Baseline_Amyloid.df, "data/data_mci/Baseline_amyloid.csv")
+```
+
+When looking at this new combined dataset it takes data based on Sample ID and now includes both demographic information, as well as clinical biomarkers, only when sample ID data is available for both. 
+
+* The variables included are `r names(Baseline_Amyloid.df)`.
+
+* The size of the dataframe is `r nrow(Baseline_Amyloid.df)` rows by `r ncol(Baseline_Amyloid.df)` columns. 
+
+
