@@ -150,9 +150,9 @@ Variables contained:
 First, we will read in the "Mr. Trash Wheel" sheet from the xlsx file, selecting cells with data, ignoring the header icon and the sums at the bottom. Next we clean the column names using the janitor package's function. Then we mutate a new variable for `homes_powered` (based on the fact that each ton of trash equates to on average 500 kilowatts of electricity,  An average household will use 30 tons). In this dataframe it had `year` as a character, so it was changed to a numeric variable to facilitate downstream merging. A new variable was made to label these values as belonging to Mr. Trash Wheel, titled `Trash_wheel == Mister`. 
 
 ```{r Mr. Trash Wheel}
-MrTrashWheel.df <- readxl::read_excel("data/202207 Trash Wheel Collection Data.xlsx",
+MrTrashWheel.df <- readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx",
                    sheet = "Mr. Trash Wheel",
-                   range = "A2:N549",
+                   range = "A2:N586",
                    col_names = TRUE,
                    na = "") %>%
   janitor::clean_names()
@@ -167,9 +167,9 @@ MrTrashWheel.df[["year"]] <- as.numeric(MrTrashWheel.df[["year"]])
 Second, we will read in the "Professor Trash Wheel" sheet, selecting cells with data. Again we ignore the header and sums at the bottom. Column names are cleaned, and a new mutated variable for `homes_powered` was made as above as well as for the source of the data, where `Trash_wheel == "Professor`.
 
 ```{r Professor Trash Wheel}
-ProfTrashWheel.df <- readxl::read_excel("data/202207 Trash Wheel Collection Data.xlsx",
+ProfTrashWheel.df <- readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx",
                    sheet = "Professor Trash Wheel",
-                   range = "A2:M96",
+                   range = "A2:M108",
                    col_names = TRUE,
                    na = "") %>%
   janitor::clean_names()
@@ -182,9 +182,9 @@ ProfTrashWheel.df <- ProfTrashWheel.df %>% mutate(Trash_wheel = "Professor")
 Lastly, we will read in the "Gwynnda Trash Wheel" sheet. We selected cells with data only, ignoring the header and sums at the bottom. Column names were cleaned, and a new mutated variable for `homes_powered` was made. Again a new variable was created, `Trash_wheel == Gwynnda`. 
 
 ```{r Gwynnda}
-Gwynnda.df <- readxl::read_excel("data/202207 Trash Wheel Collection Data.xlsx",
+Gwynnda.df <- readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx",
                    sheet = "Gwynnda Trash Wheel",
-                   range = "A2:K108",
+                   range = "A2:L157",
                    col_names = TRUE,
                    na = "") %>%
   janitor::clean_names()
@@ -196,7 +196,7 @@ Gwynnda.df <- Gwynnda.df %>% mutate(Trash_wheel = "Gwynnda")
 
 ## Combine datasets
 
-To combine datasets, and retain all the information, we first do `full_join` with Mister and Professor Trash Wheel. Of note Professor Trash wheel has missing values (NA) for sports balls as it did not have that column to begin with. 
+To combine datasets, and retain all the information, we first do `full_join` with Mister and Professor Trash Wheel. Of note both Professor Trash wheel and Gwynnda have missing values (NA) for sports balls as they did not have that column to begin with, and glass bottles for Gqynnda as well has NA.
 
 We then take that `Mr_ProfTrashWheel.df` and combine it with Gwynnda, which of note adds a new variable column for plastic bags, but has missing values for glass bottles, grocery bags, chip bags, and sports balls as it did not include that information originally. This creates the `All_TrashWheel.df` with all the combined data for the three trash wheels.
 
