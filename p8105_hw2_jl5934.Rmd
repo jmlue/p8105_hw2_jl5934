@@ -147,7 +147,13 @@ Variables contained:
 
 ## Reading in and cleaning the Mr. Trash Wheel dataset
 
-First, we will read in the "Mr. Trash Wheel" sheet from the xlsx file, selecting cells with data, ignoring the header icon and the sums at the bottom. Next we clean the column names using the janitor package's function. Then we mutate a new variable for `homes_powered` (based on the fact that each ton of trash equates to on average 500 kilowatts of electricity,  An average household will use 30 tons). In this dataframe it had `year` as a character, so it was changed to a numeric variable to facilitate downstream merging. A new variable was made to label these values as belonging to Mr. Trash Wheel, titled `Trash_wheel == Mister`. 
+First, we will read in the "Mr. Trash Wheel" sheet from the xlsx file, selecting cells with data, ignoring the header icon and the sums at the bottom. 
+
+* Next we clean the column names using the janitor package's function. 
+
+* Then we mutate a new variable for `homes_powered` (based on the fact that each ton of trash equates to on average 500 kilowatts of electricity,  an average household will use 30 tons). 
+
+* In this dataframe it had `year` as a character, so it was changed to a numeric variable to facilitate downstream merging. A new variable was made to label these values as belonging to Mr. Trash Wheel, titled `Trash_wheel == Mister`. 
 
 ```{r Mr. Trash Wheel}
 MrTrashWheel.df <- readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx",
@@ -164,7 +170,11 @@ MrTrashWheel.df <- MrTrashWheel.df %>% mutate(Trash_wheel = "Mister")
 MrTrashWheel.df[["year"]] <- as.numeric(MrTrashWheel.df[["year"]])
 ```
 
-Second, we will read in the "Professor Trash Wheel" sheet, selecting cells with data. Again we ignore the header and sums at the bottom. Column names are cleaned, and a new mutated variable for `homes_powered` was made as above as well as for the source of the data, where `Trash_wheel == "Professor`.
+Second, we will read in the "Professor Trash Wheel" sheet, selecting cells with data. 
+
+* Again we ignore the header and sums at the bottom. 
+
+* Column names are cleaned, and a new mutated variable for `homes_powered` was made as above as well as for the source of the data, where `Trash_wheel == "Professor`.
 
 ```{r Professor Trash Wheel}
 ProfTrashWheel.df <- readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx",
@@ -179,7 +189,11 @@ ProfTrashWheel.df <- ProfTrashWheel.df %>% mutate(homes_powered = (weight_tons*5
 ProfTrashWheel.df <- ProfTrashWheel.df %>% mutate(Trash_wheel = "Professor")
 ```
 
-Lastly, we will read in the "Gwynnda Trash Wheel" sheet. We selected cells with data only, ignoring the header and sums at the bottom. Column names were cleaned, and a new mutated variable for `homes_powered` was made. Again a new variable was created, `Trash_wheel == Gwynnda`. 
+Lastly, we will read in the "Gwynnda Trash Wheel" sheet. 
+
+* We selected cells with data only, ignoring the header and sums at the bottom. 
+
+* Column names were cleaned, and a new mutated variable for `homes_powered` was made. Again a new variable was created, `Trash_wheel == Gwynnda`. 
 
 ```{r Gwynnda}
 Gwynnda.df <- readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx",
@@ -196,9 +210,15 @@ Gwynnda.df <- Gwynnda.df %>% mutate(Trash_wheel = "Gwynnda")
 
 ## Combine datasets
 
-To combine datasets, and retain all the information, we first do `full_join` with Mister and Professor Trash Wheel. Of note both Professor Trash wheel and Gwynnda have missing values (NA) for sports balls as they did not have that column to begin with, and glass bottles for Gqynnda as well has NA.
+To combine datasets, and retain all the information, we first do `full_join` with Mister and Professor Trash Wheel. 
 
-We then take that `Mr_ProfTrashWheel.df` and combine it with Gwynnda, which of note adds a new variable column for plastic bags, but has missing values for glass bottles, grocery bags, chip bags, and sports balls as it did not include that information originally. This creates the `All_TrashWheel.df` with all the combined data for the three trash wheels.
+* Of note both Professor Trash wheel and Gwynnda have missing values (NA) for sports balls as they did not have that column to begin with, and glass bottles for Gqynnda as well has NA.
+
+We then take that `Mr_ProfTrashWheel.df` and combine it with Gwynnda. 
+
+* Of note this adds a new variable column for plastic bags, but has missing values for glass bottles, grocery bags, chip bags, and sports balls as it did not include that information originally. 
+
+This creates the `All_TrashWheel.df` with all the combined data for the three trash wheels!
 
 ```{r}
 Mr_ProfTrashWheel.df <- full_join(MrTrashWheel.df, ProfTrashWheel.df) 
@@ -226,7 +246,9 @@ We will Import the "MCI_Baseline.csv" file and create the `Baseline_demographics
 
 * Next we wanted to change the format of the `sex` and `apoe4` variables, and made them both into binary factors, i.e. factors with two levels.
 
-* Lastly, to subset out those that did develop MCI, we removed those with missing values of NA in the `age_of_onset` variable, and made a new table `Baseline_demographics_without_MCI.df`.
+* To keep only those that met selection criteria: first we selected those that did develop MCI by removing those with missing values of NA in the `age_of_onset` variable, and made a new table `Baseline_demographics_with_MCI.df`. 
+
+  * Next we kept only those with `current_age` < `age_at_onset`, which removed three samples that had developed MCI before current age at enrollment. 
 
 ```{r baseline demographics}
 Baseline_demographics.df <- read_csv("data/data_mci/MCI_baseline.csv", 
@@ -237,15 +259,17 @@ Baseline_demographics.df <- read_csv("data/data_mci/MCI_baseline.csv",
 Baseline_demographics.df[["sex"]] <- as.factor(Baseline_demographics.df[["sex"]]) #sex =1 if male, 0 = female, consider renaming
 Baseline_demographics.df[["apoe4"]] <- as.factor(Baseline_demographics.df[["apoe4"]])
 
-Baseline_demographics_without_MCI.df <- subset(Baseline_demographics.df, is.na(age_at_onset))
+Baseline_demographics_with_MCI.df <- subset(Baseline_demographics.df, !is.na(age_at_onset))
+
+Baseline_demographics_with_MCI.df <- subset(Baseline_demographics_with_MCI.df, current_age < age_at_onset)
 
 ```
 
-* A total of `r nrow(Baseline_demographics.df)` patients were recruited, but of those `r nrow(Baseline_demographics.df) - nrow(Baseline_demographics_without_MCI.df)` developed Mild Cognitive Impairment (MCI). When removed, we were left with `r nrow(Baseline_demographics_without_MCI.df)` patients in the study.
+* A total of `r nrow(Baseline_demographics.df)` patients were recruited, but of those only `r nrow(Baseline_demographics_with_MCI.df)` patients met inclusion criteria into the study.
 
-* Baseline mean age of all recruited participants was `r mean(Baseline_demographics.df[["current_age"]])`, and for those without MCI it was `r mean(Baseline_demographics_without_MCI.df[["current_age"]])`. Range of the ages for all recruited participants was `r range(Baseline_demographics.df[["current_age"]])`, and range of ages for those without MCI was `r range(Baseline_demographics_without_MCI.df[["current_age"]])`.
+* Baseline mean age of all recruited participants was `r mean(Baseline_demographics.df[["current_age"]])`, and for those that met inclusion criteria it was `r mean(Baseline_demographics_with_MCI.df[["current_age"]])`. Range of the ages for all recruited participants was `r range(Baseline_demographics.df[["current_age"]])`, and range of ages for those included it was `r range(Baseline_demographics_with_MCI.df[["current_age"]])`.
 
-* The proportion of women in the study who are APOE4 carriers are `r (nrow(Baseline_demographics.df %>% filter(sex == '0' & apoe4 == '1')))/(nrow(Baseline_demographics.df %>% filter(sex == '0')))` from the total population, and `r (nrow(Baseline_demographics_without_MCI.df %>% filter(sex == '0' & apoe4 == '1')))/(nrow(Baseline_demographics_without_MCI.df %>% filter(sex == '0')))` among those without MCI.
+* The proportion of women in the study who are APOE4 carriers are `r (nrow(Baseline_demographics.df %>% filter(sex == '0' & apoe4 == '1')))/(nrow(Baseline_demographics.df %>% filter(sex == '0')))` from the total population, and `r (nrow(Baseline_demographics_with_MCI.df %>% filter(sex == '0' & apoe4 == '1')))/(nrow(Baseline_demographics_with_MCI.df %>% filter(sex == '0')))` among those that met inclusion criteria in terms of MCI onset.
 
 
 ### We will now import, clean, and rename the variable Study_ID to id to match the prior above in preparation for merging. 
@@ -258,29 +282,25 @@ Amyloid_Biomarker.df <- read_csv("data/data_mci/mci_amyloid.csv",
   rename("id" = "study_id")
 ```
 
-We will determine which sample IDs are found in `Baseline_demographics_without_MCI.df` but not in `Amyloid_Biomarker.df`, and then conversely see which are in `Amyloid_Biomarker.df` but not in `Baseline_demographics_without_MCI.df`.
+We will determine which sample IDs are found in `Baseline_demographics_with_MCI.df` but not in `Amyloid_Biomarker.df`, and then conversely see which are in `Amyloid_Biomarker.df` but not in `Baseline_demographics_with_MCI.df`.
 
 ```{r see if shared samples}
-Baseline_demographics_without_MCI.df[["shared_with_biomarkers"]] <- Baseline_demographics_without_MCI.df[["id"]] %in% c(Amyloid_Biomarker.df[["id"]])
+Baseline_demographics_with_MCI.df[["shared_with_biomarkers"]] <- Baseline_demographics_with_MCI.df[["id"]] %in% c(Amyloid_Biomarker.df[["id"]])
 
-Amyloid_Biomarker.df[["shared_with_baseline"]] <- Amyloid_Biomarker.df[["id"]] %in% c(Baseline_demographics_without_MCI.df[["id"]])
+Amyloid_Biomarker.df[["shared_with_baseline"]] <- Amyloid_Biomarker.df[["id"]] %in% c(Baseline_demographics_with_MCI.df[["id"]])
 ```
 
-There are `r nrow(Baseline_demographics_without_MCI.df %>% filter(shared_with_biomarkers == "FALSE"))` IDs from the `Baseline_demographics_without_MCI.df` not found in the `Amyloid_biomaker` (id = 92, 179, 304, 389, 412). 
+There are `r nrow(Baseline_demographics_with_MCI.df %>% filter(shared_with_biomarkers == "FALSE"))` IDs from the `Baseline_demographics_without_MCI.df` not found in the `Amyloid_biomaker` (id = 14, 49, 268). 
 
-There are `r nrow(Amyloid_Biomarker.df %>% filter(shared_with_baseline == "FALSE"))` IDs from the `Amyloid_biomarker` not found in the `Baseline_demographics_without_MCI.df`.
+There are `r nrow(Amyloid_Biomarker.df %>% filter(shared_with_baseline == "FALSE"))` IDs from the `Amyloid_biomarker` not found in the `Baseline_demographics_with_MCI.df`.
 
 ## Combining the Datasets
 
-We will use the `inner_join` function to combine the two tables of `Baseline_demographics_without_MCI.df` and `Amyloid_Biomarker.df`, so that only those with participants found in both are retained. 
-
-* The table will then be saved as a CSV file to our local directory as "Baseline_amyloid.csv".
+We will use the `inner_join` function to combine the two tables of `Baseline_demographics_with_MCI.df` and `Amyloid_Biomarker.df`, so that only those with participants found in both are retained. 
 
 ```{r combine if matching sample ID}
-Baseline_Amyloid.df <- inner_join(Baseline_demographics_without_MCI.df, Amyloid_Biomarker.df, by = "id") %>%
+Baseline_Amyloid.df <- inner_join(Baseline_demographics_with_MCI.df, Amyloid_Biomarker.df, by = "id") %>%
   select(-c("shared_with_biomarkers", "shared_with_baseline"))
-
-write_csv(Baseline_Amyloid.df, "data/data_mci/Baseline_amyloid.csv")
 ```
 
 When looking at this new combined dataset it takes data based on `ID` and now includes both demographic information as well as clinical biomarkers, but only when a matching `ID` is found in both. 
@@ -289,4 +309,9 @@ When looking at this new combined dataset it takes data based on `ID` and now in
 
 * The size of the table is `r nrow(Baseline_Amyloid.df)` rows by `r ncol(Baseline_Amyloid.df)` columns. 
 
+```{r output csv file}
+write_csv(Baseline_Amyloid.df, "data/data_mci/Baseline_amyloid.csv")
+```
+
+The table will then be saved as a CSV file to our local directory as "Baseline_amyloid.csv".
 
