@@ -212,7 +212,7 @@ Gwynnda.df <- Gwynnda.df %>% mutate(Trash_wheel = "Gwynnda")
 
 To combine datasets, and retain all the information, we first do `full_join` with Mister and Professor Trash Wheel. 
 
-* Of note both Professor Trash wheel and Gwynnda have missing values (NA) for sports balls as they did not have that column to begin with, and glass bottles for Gqynnda as well has NA.
+* Of note both Professor Trash wheel and Gwynnda have missing values (NA) for sports balls as they did not have that column to begin with, and glass bottles for Gwynnda as well has NA.
 
 We then take that `Mr_ProfTrashWheel.df` and combine it with Gwynnda. 
 
@@ -248,7 +248,7 @@ We will Import the "MCI_Baseline.csv" file and create the `Baseline_demographics
 
 * To keep only those that met selection criteria: first we selected those that did develop MCI by removing those with missing values of NA in the `age_of_onset` variable, and made a new table `Baseline_demographics_with_MCI.df`. 
 
-  * Next we kept only those with `current_age` < `age_at_onset`, which removed three samples that had developed MCI before current age at enrollment. 
+  * Next we kept only those with `current_age` < `age_at_onset`, which removed four samples that had developed MCI before current age at enrollment. 
 
 ```{r baseline demographics}
 Baseline_demographics.df <- read_csv("data/data_mci/MCI_baseline.csv", 
@@ -261,7 +261,7 @@ Baseline_demographics.df[["apoe4"]] <- as.factor(Baseline_demographics.df[["apoe
 
 Baseline_demographics_with_MCI.df <- subset(Baseline_demographics.df, !is.na(age_at_onset))
 
-Baseline_demographics_with_MCI.df <- subset(Baseline_demographics_with_MCI.df, current_age < age_at_onset)
+Baseline_demographics_with_MCI.df <- subset(Baseline_demographics_with_MCI.df, current_age < age_at_onset) #not <=
 
 ```
 
@@ -282,6 +282,10 @@ Amyloid_Biomarker.df <- read_csv("data/data_mci/mci_amyloid.csv",
   rename("id" = "study_id")
 ```
 
+* There are `r nrow(Amyloid_Biomarker.df)` rows and `r ncol(Amyloid_Biomarker.df)` columns. 
+
+* The variables included are `r names(Amyloid_Biomarker.df)`. 
+
 We will determine which sample IDs are found in `Baseline_demographics_with_MCI.df` but not in `Amyloid_Biomarker.df`, and then conversely see which are in `Amyloid_Biomarker.df` but not in `Baseline_demographics_with_MCI.df`.
 
 ```{r see if shared samples}
@@ -290,13 +294,13 @@ Baseline_demographics_with_MCI.df[["shared_with_biomarkers"]] <- Baseline_demogr
 Amyloid_Biomarker.df[["shared_with_baseline"]] <- Amyloid_Biomarker.df[["id"]] %in% c(Baseline_demographics_with_MCI.df[["id"]])
 ```
 
-There are `r nrow(Baseline_demographics_with_MCI.df %>% filter(shared_with_biomarkers == "FALSE"))` IDs from the `Baseline_demographics_without_MCI.df` not found in the `Amyloid_biomaker` (id = 14, 49, 268). 
+There are `r nrow(Baseline_demographics_with_MCI.df %>% filter(shared_with_biomarkers == "FALSE"))` IDs from the `Baseline_demographics_with_MCI.df` not found in the `Amyloid_biomaker` (id = 14, 49, 268), out of total of `r nrow(Baseline_demographics_with_MCI.df)`.
 
-There are `r nrow(Amyloid_Biomarker.df %>% filter(shared_with_baseline == "FALSE"))` IDs from the `Amyloid_biomarker` not found in the `Baseline_demographics_with_MCI.df`.
+There are `r nrow(Amyloid_Biomarker.df %>% filter(shared_with_baseline == "FALSE"))` IDs from the `Amyloid_biomarker` not found in the `Baseline_demographics_with_MCI.df`, out of a total of `r nrow(Amyloid_Biomarker.df)`.
 
 ## Combining the Datasets
 
-We will use the `inner_join` function to combine the two tables of `Baseline_demographics_with_MCI.df` and `Amyloid_Biomarker.df`, so that only those with participants found in both are retained. 
+We will use the `inner_join` function to combine the two tables of `Baseline_demographics_with_MCI.df` and `Amyloid_Biomarker.df`, so that only those with participants, who met inclusion criteria and were found in both are retained. 
 
 ```{r combine if matching sample ID}
 Baseline_Amyloid.df <- inner_join(Baseline_demographics_with_MCI.df, Amyloid_Biomarker.df, by = "id") %>%
